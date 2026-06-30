@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>가계부</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Pretendard:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#FAF9F6;
+    --bg-elevated:#FFFFFF;
+    --ink:#1C1B19;
+    --ink-muted:#6F6B63;
+    --rule:#E2DFD6;
+    --accent:#2F5D50;
+    --accent-soft:#E8EFEC;
+    --danger:#A65B4E;
+    --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
+    --serif:'Noto Serif KR',serif;
+    --sans:'Pretendard',-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:14px;
+    line-height:1.5;
+  }
+  .wrap{
+    max-width:980px;
+    margin:0 auto;
+    padding:32px 20px 64px;
+  }
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:14px;
+    margin-bottom:24px;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.12em;
+    color:var(--ink-muted);
+    text-transform:uppercase;
+  }
+  h1{
+    font-family:var(--sans);
+    font-size:26px;
+    font-weight:700;
+    margin:2px 0 0;
+  }
+  .total-badge{
+    text-align:right;
+  }
+  .total-badge .label{
+    font-size:11px;
+    color:var(--ink-muted);
+  }
+  .total-badge .value{
+    font-family:var(--mono);
+    font-size:22px;
+    font-weight:600;
+    color:var(--accent);
+  }
+  section{
+    background:var(--bg-elevated);
+    border:1px solid var(--rule);
+    border-radius:4px;
+    padding:18px 20px;
+    margin-bottom:18px;
+    position:relative;
+  }
+  section::before{
+    content:"";
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:3px;
+    background:var(--accent);
+    border-radius:4px 0 0 4px;
+  }
+  section{padding-left:22px;}
+  h2{
+    font-family:var(--sans);
+    font-size:15px;
+    font-weight:700;
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  h2 .num{
+    font-family:var(--mono);
+    color:var(--accent);
+    font-size:13px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:120px 1.6fr 1fr 1fr 1fr 0.9fr auto;
+    gap:8px;
+    align-items:end;
+  }
+  .field label{
+    display:block;
+    font-size:11px;
+    color:var(--ink-muted);
+    margin-bottom:4px;
+  }
+  input, select{
+    width:100%;
+    padding:8px 9px;
+    border:1px solid var(--rule);
+    border-radius:3px;
+    font-family:var(--sans);
+    font-size:13px;
+    background:#fff;
+    color:var(--ink);
+  }
+  input:focus, select:focus{
+    outline:none;
+    border-color:var(--accent);
+  }
+  .amount-input{font-family:var(--mono); text-align:right;}
+  button{
+    font-family:var(--sans);
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+    border-radius:3px;
+    border:1px solid transparent;
+  }
+  .btn-primary{
+    background:var(--accent);
+    color:#fff;
+    padding:8px 16px;
+    border:1px solid var(--accent);
+  }
+  .btn-primary:hover{opacity:0.9;}
+  .btn-ghost{
+    background:transparent;
+    color:var(--ink-muted);
+    border:1px solid var(--rule);
+    padding:7px 12px;
+  }
+  .btn-ghost:hover{border-color:var(--ink-muted); color:var(--ink);}
+  .filter-row{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr 1fr 1.4fr auto;
+    gap:8px;
+    align-items:end;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  thead th{
+    text-align:left;
+    font-size:11px;
+    color:var(--ink-muted);
+    font-weight:600;
+    border-bottom:1px solid var(--ink);
+    padding:6px 8px;
+  }
+  thead th.num{text-align:right;}
+  tbody td{
+    padding:8px;
+    border-bottom:1px solid var(--rule);
+    vertical-align:middle;
+  }
+  tbody tr:hover{background:var(--accent-soft);}
+  td.amount{
+    font-family:var(--mono);
+    text-align:right;
+    font-weight:600;
+  }
+  .cat-pill{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:10px;
+    font-size:11px;
+    color:#fff;
+    font-weight:600;
+  }
+  .row-actions{display:flex; gap:6px; white-space:nowrap;}
+  .row-actions button{padding:4px 8px; font-size:11px;}
+  .empty{
+    text-align:center;
+    color:var(--ink-muted);
+    padding:32px 0;
+    font-size:13px;
+  }
+  .stats-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+  .chart-box{
+    height:260px;
+    position:relative;
+  }
+  .chart-title{
+    font-size:12px;
+    color:var(--ink-muted);
+    margin-bottom:8px;
+  }
+  .summary-strip{
+    display:flex;
+    gap:24px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+  }
+  .summary-item .label{font-size:11px; color:var(--ink-muted);}
+  .summary-item .value{font-family:var(--mono); font-size:18px; font-weight:600;}
+  @media (max-width:760px){
+    .grid{grid-template-columns:1fr 1fr;}
+    .filter-row{grid-template-columns:1fr 1fr;}
+    .stats-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Personal Ledger</div>
+      <h1>가계부</h1>
+    </div>
+    <div class="total-badge">
+      <div class="label">필터 합계</div>
+      <div class="value" id="filteredTotal">0원</div>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="num">01</span> 내역 입력</h2>
+    <div class="grid">
+      <div class="field"><label>날짜</label><input type="date" id="f-date"></div>
+      <div class="field"><label>구매내역</label><input type="text" id="f-item" placeholder="예) 스타벅스 아메리카노"></div>
+      <div class="field"><label>금액</label><input type="text" inputmode="numeric" class="amount-input" id="f-amount" placeholder="0"></div>
+      <div class="field"><label>구매장소</label><input type="text" id="f-place" placeholder="예) 강남점"></div>
+      <div class="field"><label>결제방법</label><input type="text" id="f-payment" list="payment-options" placeholder="카드/현금"></div>
+      <div class="field"><label>카테고리</label>
+        <select id="f-category">
+          <option value="식비">식비</option>
+          <option value="교통">교통</option>
+          <option value="쇼핑">쇼핑</option>
+          <option value="주거">주거</option>
+          <option value="의료">의료</option>
+          <option value="문화/여가">문화/여가</option>
+          <option value="통신">통신</option>
+          <option value="경조사">경조사</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div class="field"><button class="btn-primary" id="submitBtn" style="width:100%;">추가</button></div>
+    </div>
+    <datalist id="payment-options">
+      <option value="카드">
+      <option value="현금">
+      <option value="계좌이체">
+    </datalist>
+  </section>
+
+  <section>
+    <h2><span class="num">02</span> 필터</h2>
+    <div class="filter-row">
+      <div class="field"><label>시작일</label><input type="date" id="ff-start"></div>
+      <div class="field"><label>종료일</label><input type="date" id="ff-end"></div>
+      <div class="field"><label>카테고리</label>
+        <select id="ff-category"><option value="">전체</option></select>
+      </div>
+      <div class="field"><label>결제방법</label>
+        <select id="ff-payment"><option value="">전체</option></select>
+      </div>
+      <div class="field"><label>검색 (내역/장소)</label><input type="text" id="ff-search" placeholder="검색어"></div>
+      <div class="field"><button class="btn-ghost" id="resetFilterBtn" style="width:100%;">초기화</button></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">03</span> 내역 목록 <span id="rowCount" style="font-family:var(--mono); font-size:11px; color:var(--ink-muted); font-weight:400;"></span></h2>
+    <table>
+      <thead>
+        <tr>
+          <th>날짜</th><th>구매내역</th><th>카테고리</th><th class="num">금액</th><th>구매장소</th><th>결제방법</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="empty" id="emptyState" style="display:none;">입력된 내역이 없습니다.</div>
+  </section>
+
+  <section>
+    <h2><span class="num">04</span> 통계 <span style="font-family:var(--mono); font-size:11px; color:var(--ink-muted); font-weight:400;">(현재 필터 기준)</span></h2>
+    <div class="summary-strip">
+      <div class="summary-item"><div class="label">건수</div><div class="value" id="statCount">0건</div></div>
+      <div class="summary-item"><div class="label">합계</div><div class="value" id="statSum">0원</div></div>
+      <div class="summary-item"><div class="label">평균</div><div class="value" id="statAvg">0원</div></div>
+    </div>
+    <div class="stats-grid">
+      <div>
+        <div class="chart-title">월별 지출 추이</div>
+        <div class="chart-box"><canvas id="monthlyChart"></canvas></div>
+      </div>
+      <div>
+        <div class="chart-title">카테고리별 비중</div>
+        <div class="chart-box"><canvas id="categoryChart"></canvas></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const CATEGORY_COLORS = {
+  '식비':'#2F5D50','교통':'#4A6FA5','쇼핑':'#A65B4E','주거':'#8C6E4B',
+  '의료':'#6B5B95','문화/여가':'#3D8B7D','통신':'#B98B3E','경조사':'#C77B93','기타':'#7A7A7A'
+};
+const KEYWORD_MAP = [
+  ['식비',['식당','카페','커피','스타벅스','편의점','마트','음식','배달','식품','빵','분식','국밥','김밥','치킨','피자','이마트','홈플러스','버거']],
+  ['교통',['택시','버스','지하철','주유','톨게이트','교통','철도','ktx','주차','카카오t','쏘카']],
+  ['쇼핑',['쇼핑','백화점','옷','신발','화장품','쿠팡','마켓','스토어','지마켓','11번가','올리브영']],
+  ['주거',['관리비','월세','전기','가스','수도','임대료']],
+  ['의료',['병원','약국','의원','치과','한의원']],
+  ['문화/여가',['영화','공연','여행','호텔','놀이','게임','골프','헬스','클럽','콘서트','전시']],
+  ['통신',['통신','핸드폰','휴대폰','요금제','skt','kt','lgu']],
+  ['경조사',['축의금','조의금','경조사','부조']]
+];
+function guessCategory(item, place){
+  const text = ((item||'')+' '+(place||'')).toLowerCase();
+  for(const [cat, keywords] of KEYWORD_MAP){
+    if(keywords.some(k=>text.includes(k))) return cat;
+  }
+  return '기타';
+}
+
+let entries = [];
+let editingId = null;
+let monthlyChartInst = null;
+let categoryChartInst = null;
+
+async function loadEntries(){
+  try{
+    const res = await window.storage.get('entries', false);
+    entries = res && res.value ? JSON.parse(res.value) : [];
+  }catch(e){
+    entries = [];
+  }
+}
+async function saveEntries(){
+  try{
+    await window.storage.set('entries', JSON.stringify(entries), false);
+  }catch(e){
+    console.error('저장 실패', e);
+  }
+}
+
+function fmt(n){ return Number(n||0).toLocaleString('ko-KR') + '원'; }
+
+function clearForm(){
+  document.getElementById('f-date').value = '';
+  document.getElementById('f-item').value = '';
+  document.getElementById('f-amount').value = '';
+  document.getElementById('f-place').value = '';
+  document.getElementById('f-payment').value = '';
+  document.getElementById('f-category').value = '식비';
+  editingId = null;
+  document.getElementById('submitBtn').textContent = '추가';
+}
+
+document.getElementById('f-item').addEventListener('blur', ()=>{
+  if(editingId) return;
+  const item = document.getElementById('f-item').value;
+  const place = document.getElementById('f-place').value;
+  if(item) document.getElementById('f-category').value = guessCategory(item, place);
+});
+
+document.getElementById('submitBtn').addEventListener('click', async ()=>{
+  const date = document.getElementById('f-date').value;
+  const item = document.getElementById('f-item').value.trim();
+  const amountRaw = document.getElementById('f-amount').value.replace(/[^0-9]/g,'');
+  const place = document.getElementById('f-place').value.trim();
+  const payment = document.getElementById('f-payment').value.trim();
+  const category = document.getElementById('f-category').value;
+
+  if(!date || !item || !amountRaw){
+    alert('날짜, 구매내역, 금액은 필수입니다.');
+    return;
+  }
+  const amount = parseInt(amountRaw, 10);
+
+  if(editingId){
+    const idx = entries.findIndex(e=>e.id===editingId);
+    if(idx>-1) entries[idx] = {...entries[idx], date, item, amount, place, payment, category};
+  }else{
+    entries.push({id: Date.now()+'-'+Math.random().toString(36).slice(2,7), date, item, amount, place, payment, category});
+  }
+  await saveEntries();
+  clearForm();
+  populateFilterOptions();
+  render();
+});
+
+document.getElementById('resetFilterBtn').addEventListener('click', ()=>{
+  document.getElementById('ff-start').value = '';
+  document.getElementById('ff-end').value = '';
+  document.getElementById('ff-category').value = '';
+  document.getElementById('ff-payment').value = '';
+  document.getElementById('ff-search').value = '';
+  render();
+});
+
+['ff-start','ff-end','ff-category','ff-payment','ff-search'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', render);
+  document.getElementById(id).addEventListener('change', render);
+});
+
+function populateFilterOptions(){
+  const catSel = document.getElementById('ff-category');
+  const paySel = document.getElementById('ff-payment');
+  const curCat = catSel.value, curPay = paySel.value;
+  const cats = [...new Set(entries.map(e=>e.category))].sort();
+  const pays = [...new Set(entries.map(e=>e.payment).filter(Boolean))].sort();
+  catSel.innerHTML = '<option value="">전체</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  paySel.innerHTML = '<option value="">전체</option>' + pays.map(p=>`<option value="${p}">${p}</option>`).join('');
+  catSel.value = curCat; paySel.value = curPay;
+}
+
+function getFiltered(){
+  const start = document.getElementById('ff-start').value;
+  const end = document.getElementById('ff-end').value;
+  const cat = document.getElementById('ff-category').value;
+  const pay = document.getElementById('ff-payment').value;
+  const search = document.getElementById('ff-search').value.trim().toLowerCase();
+
+  return entries.filter(e=>{
+    if(start && e.date < start) return false;
+    if(end && e.date > end) return false;
+    if(cat && e.category !== cat) return false;
+    if(pay && e.payment !== pay) return false;
+    if(search && !((e.item||'').toLowerCase().includes(search) || (e.place||'').toLowerCase().includes(search))) return false;
+    return true;
+  }).sort((a,b)=> b.date.localeCompare(a.date));
+}
+
+function renderTable(filtered){
+  const body = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+  document.getElementById('rowCount').textContent = `(${filtered.length}건)`;
+  if(filtered.length===0){
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  body.innerHTML = filtered.map(e=>`
+    <tr>
+      <td>${e.date}</td>
+      <td>${escapeHtml(e.item)}</td>
+      <td><span class="cat-pill" style="background:${CATEGORY_COLORS[e.category]||'#7A7A7A'}">${e.category}</span></td>
+      <td class="amount">${fmt(e.amount)}</td>
+      <td>${escapeHtml(e.place||'')}</td>
+      <td>${escapeHtml(e.payment||'')}</td>
+      <td class="row-actions">
+        <button class="btn-ghost" onclick="editEntry('${e.id}')">수정</button>
+        <button class="btn-ghost" onclick="deleteEntry('${e.id}')">삭제</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+window.editEntry = function(id){
+  const e = entries.find(x=>x.id===id);
+  if(!e) return;
+  document.getElementById('f-date').value = e.date;
+  document.getElementById('f-item').value = e.item;
+  document.getElementById('f-amount').value = e.amount;
+  document.getElementById('f-place').value = e.place;
+  document.getElementById('f-payment').value = e.payment;
+  document.getElementById('f-category').value = e.category;
+  editingId = id;
+  document.getElementById('submitBtn').textContent = '수정 완료';
+  window.scrollTo({top:0, behavior:'smooth'});
+};
+window.deleteEntry = async function(id){
+  if(!confirm('이 내역을 삭제할까요?')) return;
+  entries = entries.filter(e=>e.id!==id);
+  await saveEntries();
+  populateFilterOptions();
+  render();
+};
+
+function renderStats(filtered){
+  const sum = filtered.reduce((a,e)=>a+e.amount,0);
+  const count = filtered.length;
+  const avg = count ? Math.round(sum/count) : 0;
+  document.getElementById('filteredTotal').textContent = fmt(sum);
+  document.getElementById('statCount').textContent = count + '건';
+  document.getElementById('statSum').textContent = fmt(sum);
+  document.getElementById('statAvg').textContent = fmt(avg);
+
+  // 월별 집계
+  const monthMap = {};
+  filtered.forEach(e=>{
+    const m = e.date ? e.date.slice(0,7) : '미상';
+    monthMap[m] = (monthMap[m]||0) + e.amount;
+  });
+  const months = Object.keys(monthMap).sort();
+  const monthVals = months.map(m=>monthMap[m]);
+
+  if(monthlyChartInst) monthlyChartInst.destroy();
+  monthlyChartInst = new Chart(document.getElementById('monthlyChart'), {
+    type:'bar',
+    data:{
+      labels: months,
+      datasets:[{ data: monthVals, backgroundColor:'#2F5D50', borderRadius:3, maxBarThickness:36 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => fmt(ctx.parsed.y) } } },
+      scales:{
+        y:{ ticks:{ callback:v=>Number(v).toLocaleString('ko-KR') }, grid:{ color:'#E2DFD6' } },
+        x:{ grid:{ display:false } }
+      }
+    }
+  });
+
+  // 카테고리별 집계
+  const catMap = {};
+  filtered.forEach(e=>{ catMap[e.category] = (catMap[e.category]||0) + e.amount; });
+  const cats = Object.keys(catMap).sort((a,b)=>catMap[b]-catMap[a]);
+  const catVals = cats.map(c=>catMap[c]);
+  const catColors = cats.map(c=>CATEGORY_COLORS[c]||'#7A7A7A');
+
+  if(categoryChartInst) categoryChartInst.destroy();
+  categoryChartInst = new Chart(document.getElementById('categoryChart'), {
+    type:'doughnut',
+    data:{ labels: cats, datasets:[{ data: catVals, backgroundColor: catColors, borderWidth:2, borderColor:'#FFFFFF' }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'right', labels:{ boxWidth:10, font:{size:11} } },
+        tooltip:{ callbacks:{ label: ctx => `${ctx.label}: ${fmt(ctx.parsed)}` } }
+      }
+    }
+  });
+}
+
+function render(){
+  const filtered = getFiltered();
+  renderTable(filtered);
+  renderStats(filtered);
+}
+
+(async function init(){
+  await loadEntries();
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  populateFilterOptions();
+  render();
+})();
+</script>
+</body>
+</html>
