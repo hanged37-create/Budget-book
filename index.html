@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>가계부</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Pretendard:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -262,6 +263,44 @@
     .filter-row{grid-template-columns:1fr 1fr;}
     .stats-grid{grid-template-columns:1fr;}
     .tab-btn{padding:10px 12px; font-size:12.5px;}
+  }
+  @media (max-width:600px){
+    .wrap{padding:16px 12px 48px;}
+    header{padding-bottom:10px; margin-bottom:16px;}
+    h1{font-size:21px;}
+    .total-badge .value{font-size:18px;}
+    section{padding:14px 14px 14px 18px;}
+    .grid, .filter-row{grid-template-columns:1fr;}
+    .summary-strip{gap:14px;}
+    .chart-box{height:220px;}
+
+    table, thead, tbody, tr, td{display:block;}
+    thead{display:none;}
+    tbody tr{
+      border:1px solid var(--rule);
+      border-radius:6px;
+      padding:10px 12px;
+      margin-bottom:10px;
+    }
+    tbody td{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      border-bottom:1px dashed var(--rule);
+      padding:6px 0;
+      text-align:right;
+    }
+    tbody td:last-child{border-bottom:none; padding-top:10px;}
+    tbody td::before{
+      content:attr(data-label);
+      font-size:11px;
+      color:var(--ink-muted);
+      font-weight:600;
+      text-align:left;
+      flex-shrink:0;
+    }
+    td.amount{font-size:15px;}
   }
 </style>
 </head>
@@ -550,14 +589,14 @@ function renderTable(filtered){
     const type = e.type || 'expense';
     return `
     <tr>
-      <td>${e.date}</td>
-      <td><span class="type-pill ${type}">${type==='income'?'수입':'지출'}</span></td>
-      <td>${escapeHtml(e.item)}</td>
-      <td><span class="cat-pill" style="background:${CATEGORY_COLORS[e.category]||'#7A7A7A'}">${e.category}</span></td>
-      <td class="amount ${type}">${type==='income'?'+':''}${fmt(e.amount)}</td>
-      <td>${escapeHtml(e.place||'')}</td>
-      <td>${escapeHtml(e.payment||'')}</td>
-      <td class="row-actions">
+      <td data-label="날짜">${e.date}</td>
+      <td data-label="구분"><span class="type-pill ${type}">${type==='income'?'수입':'지출'}</span></td>
+      <td data-label="구매내역">${escapeHtml(e.item)}</td>
+      <td data-label="카테고리"><span class="cat-pill" style="background:${CATEGORY_COLORS[e.category]||'#7A7A7A'}">${e.category}</span></td>
+      <td data-label="금액" class="amount ${type}">${type==='income'?'+':''}${fmt(e.amount)}</td>
+      <td data-label="구매장소">${escapeHtml(e.place||'')}</td>
+      <td data-label="결제방법">${escapeHtml(e.payment||'')}</td>
+      <td data-label="" class="row-actions">
         <button class="btn-ghost" onclick="editEntry('${e.id}')">수정</button>
         <button class="btn-ghost" onclick="deleteEntry('${e.id}')">삭제</button>
       </td>
