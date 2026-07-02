@@ -6,7 +6,6 @@
 <title>가계부</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Pretendard:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
   :root{
     --bg:#FAF9F6;
@@ -155,31 +154,73 @@
     gap:8px;
     align-items:end;
   }
-  table{
-    width:100%;
-    border-collapse:collapse;
-    font-size:13px;
-  }
-  thead th{
-    text-align:left;
-    font-size:11px;
-    color:var(--ink-muted);
-    font-weight:600;
+  .date-group{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-size:12px;
+    font-weight:700;
+    color:var(--ink);
     border-bottom:1px solid var(--ink);
-    padding:6px 8px;
+    padding:14px 2px 6px;
   }
-  thead th.num{text-align:right;}
-  tbody td{
-    padding:8px;
-    border-bottom:1px solid var(--rule);
-    vertical-align:middle;
-  }
-  tbody tr:hover{background:var(--accent-soft);}
-  td.amount{
+  .date-group:first-child{padding-top:0;}
+  .date-group .date-sum{
     font-family:var(--mono);
-    text-align:right;
-    font-weight:600;
+    font-size:11px;
+    font-weight:500;
+    color:var(--ink-muted);
   }
+  .entry-row{
+    border-bottom:1px solid var(--rule);
+    padding:10px 2px;
+    cursor:pointer;
+  }
+  .entry-row:active{background:var(--accent-soft);}
+  .entry-main{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+  }
+  .entry-item{
+    font-size:14px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .entry-amount{
+    font-family:var(--mono);
+    font-size:14px;
+    font-weight:600;
+    flex-shrink:0;
+  }
+  .entry-amount.income{color:var(--accent);}
+  .entry-sub{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin-top:3px;
+  }
+  .entry-meta{
+    font-size:11.5px;
+    color:var(--ink-muted);
+    display:flex;
+    align-items:center;
+    gap:5px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .entry-meta .dot{
+    width:7px; height:7px;
+    border-radius:50%;
+    flex-shrink:0;
+  }
+  .entry-actions{display:none; flex-shrink:0; gap:6px;}
+  .entry-row.open .entry-actions{display:flex;}
+  .entry-actions button{padding:4px 10px; font-size:11px;}
   .cat-pill{
     display:inline-block;
     padding:2px 8px;
@@ -188,8 +229,6 @@
     color:#fff;
     font-weight:600;
   }
-  .row-actions{display:flex; gap:6px; white-space:nowrap;}
-  .row-actions button{padding:4px 8px; font-size:11px;}
   .empty{
     text-align:center;
     color:var(--ink-muted);
@@ -202,9 +241,19 @@
     gap:20px;
   }
   .chart-box{
-    height:260px;
     position:relative;
   }
+  .chart-box svg{display:block; width:100%; height:auto;}
+  .chart-legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 14px;
+    margin-top:10px;
+    font-size:12px;
+  }
+  .chart-legend .li{display:flex; align-items:center; gap:5px;}
+  .chart-legend .sw{width:10px; height:10px; border-radius:2px; flex-shrink:0;}
+  .chart-legend .pct{font-family:var(--mono); color:var(--ink-muted);}
   .chart-title{
     font-size:12px;
     color:var(--ink-muted);
@@ -272,35 +321,6 @@
     section{padding:14px 14px 14px 18px;}
     .grid, .filter-row{grid-template-columns:1fr;}
     .summary-strip{gap:14px;}
-    .chart-box{height:280px;}
-
-    table, thead, tbody, tr, td{display:block;}
-    thead{display:none;}
-    tbody tr{
-      border:1px solid var(--rule);
-      border-radius:6px;
-      padding:10px 12px;
-      margin-bottom:10px;
-    }
-    tbody td{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      border-bottom:1px dashed var(--rule);
-      padding:6px 0;
-      text-align:right;
-    }
-    tbody td:last-child{border-bottom:none; padding-top:10px;}
-    tbody td::before{
-      content:attr(data-label);
-      font-size:11px;
-      color:var(--ink-muted);
-      font-weight:600;
-      text-align:left;
-      flex-shrink:0;
-    }
-    td.amount{font-size:15px;}
   }
 </style>
 </head>
@@ -373,20 +393,16 @@
         <select id="ff-payment"><option value="">전체</option></select>
       </div>
       <div class="field"><label>검색 (내역/장소)</label><input type="text" id="ff-search" placeholder="검색어"></div>
-      <div class="field"><button class="btn-ghost" id="resetFilterBtn" style="width:100%;">초기화</button></div>
+      <div class="field" style="display:flex; gap:6px;">
+        <button class="btn-primary" id="applyFilterBtn" style="flex:1;">검색</button>
+        <button class="btn-ghost" id="resetFilterBtn">초기화</button>
+      </div>
     </div>
   </section>
 
   <section class="tab-panel" id="panel-list">
     <h2><span class="num">03</span> 내역 목록 <span id="rowCount" style="font-family:var(--mono); font-size:11px; color:var(--ink-muted); font-weight:400;"></span></h2>
-    <table>
-      <thead>
-        <tr>
-          <th>날짜</th><th>구분</th><th>구매내역</th><th>카테고리</th><th class="num">금액</th><th>구매장소</th><th>결제방법</th><th></th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
+    <div id="listBody"></div>
     <div class="empty" id="emptyState" style="display:none;">입력된 내역이 없습니다.</div>
   </section>
 
@@ -401,11 +417,11 @@
     <div class="stats-grid">
       <div>
         <div class="chart-title">월별 수입/지출 추이</div>
-        <div class="chart-box"><canvas id="monthlyChart"></canvas></div>
+        <div class="chart-box" id="monthlyChart"></div>
       </div>
       <div>
         <div class="chart-title">지출 카테고리별 비중</div>
-        <div class="chart-box"><canvas id="categoryChart"></canvas></div>
+        <div class="chart-box" id="categoryChart"></div>
       </div>
     </div>
   </section>
@@ -460,8 +476,6 @@ function guessCategory(item, place){
 
 let entries = [];
 let editingId = null;
-let monthlyChartInst = null;
-let categoryChartInst = null;
 
 const STORAGE_KEY = 'ledger_entries';
 
@@ -533,6 +547,11 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
   document.querySelector('.tab-btn[data-tab="list"]').click();
 });
 
+document.getElementById('applyFilterBtn').addEventListener('click', ()=>{
+  render();
+  document.querySelector('.tab-btn[data-tab="list"]').click();
+});
+
 document.getElementById('resetFilterBtn').addEventListener('click', ()=>{
   document.getElementById('ff-type').value = '';
   document.getElementById('ff-start').value = '';
@@ -575,11 +594,18 @@ function getFiltered(){
     if(pay && e.payment !== pay) return false;
     if(search && !((e.item||'').toLowerCase().includes(search) || (e.place||'').toLowerCase().includes(search))) return false;
     return true;
-  }).sort((a,b)=> b.date.localeCompare(a.date));
+  }).sort((a,b)=>{
+    const d = b.date.localeCompare(a.date);
+    if(d !== 0) return d;
+    // 같은 날짜면 최근 기입한 순 (id 앞부분이 입력 시각 타임스탬프)
+    const ta = parseInt(String(a.id).split('-')[0], 10) || 0;
+    const tb = parseInt(String(b.id).split('-')[0], 10) || 0;
+    return tb - ta;
+  });
 }
 
 function renderTable(filtered){
-  const body = document.getElementById('tableBody');
+  const body = document.getElementById('listBody');
   const empty = document.getElementById('emptyState');
   document.getElementById('rowCount').textContent = `(${filtered.length}건)`;
   if(filtered.length===0){
@@ -588,24 +614,38 @@ function renderTable(filtered){
     return;
   }
   empty.style.display = 'none';
-  body.innerHTML = filtered.map(e=>{
+
+  let html = '';
+  let lastDate = null;
+  filtered.forEach(e=>{
     const type = e.type || 'expense';
-    return `
-    <tr>
-      <td data-label="날짜">${e.date}</td>
-      <td data-label="구분"><span class="type-pill ${type}">${type==='income'?'수입':'지출'}</span></td>
-      <td data-label="구매내역">${escapeHtml(e.item)}</td>
-      <td data-label="카테고리"><span class="cat-pill" style="background:${CATEGORY_COLORS[e.category]||'#7A7A7A'}">${e.category}</span></td>
-      <td data-label="금액" class="amount ${type}">${type==='income'?'+':''}${fmt(e.amount)}</td>
-      <td data-label="구매장소">${escapeHtml(e.place||'')}</td>
-      <td data-label="결제방법">${escapeHtml(e.payment||'')}</td>
-      <td data-label="" class="row-actions">
-        <button class="btn-ghost" onclick="editEntry('${e.id}')">수정</button>
-        <button class="btn-ghost" onclick="deleteEntry('${e.id}')">삭제</button>
-      </td>
-    </tr>
-  `;}).join('');
+    if(e.date !== lastDate){
+      // 날짜별 그룹 헤더 + 해당 날짜 지출 합계
+      const dayExpense = filtered.filter(x=>x.date===e.date && (x.type||'expense')==='expense').reduce((a,x)=>a+x.amount,0);
+      html += `<div class="date-group">
+        <span>${e.date}</span>
+        <span class="date-sum">${dayExpense ? '지출 '+fmt(dayExpense) : ''}</span>
+      </div>`;
+      lastDate = e.date;
+    }
+    const sub = [e.category, e.payment, e.place].filter(Boolean).join(' · ');
+    html += `<div class="entry-row" onclick="toggleEntryActions(this)">
+      <div class="entry-main">
+        <span class="entry-item">${escapeHtml(e.item)}</span>
+        <span class="entry-amount ${type}">${type==='income'?'+':''}${fmt(e.amount)}</span>
+      </div>
+      <div class="entry-sub">
+        <span class="entry-meta"><span class="dot" style="background:${CATEGORY_COLORS[e.category]||'#7A7A7A'}"></span>${escapeHtml(sub)}</span>
+        <span class="entry-actions">
+          <button class="btn-ghost" onclick="event.stopPropagation(); editEntry('${e.id}')">수정</button>
+          <button class="btn-ghost" onclick="event.stopPropagation(); deleteEntry('${e.id}')">삭제</button>
+        </span>
+      </div>
+    </div>`;
+  });
+  body.innerHTML = html;
 }
+window.toggleEntryActions = function(el){ el.classList.toggle('open'); };
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -659,54 +699,104 @@ function renderStats(filtered){
     else{ monthExpense[m] = (monthExpense[m]||0) + e.amount; }
   });
   const months = [...new Set([...Object.keys(monthIncome), ...Object.keys(monthExpense)])].sort();
-  const incomeVals = months.map(m=>monthIncome[m]||0);
-  const expenseVals = months.map(m=>monthExpense[m]||0);
-
-  if(monthlyChartInst) monthlyChartInst.destroy();
-  monthlyChartInst = new Chart(document.getElementById('monthlyChart'), {
-    type:'bar',
-    data:{
-      labels: months,
-      datasets:[
-        { label:'수입', data: incomeVals, backgroundColor:'#3D8B7D', borderRadius:3, maxBarThickness:28 },
-        { label:'지출', data: expenseVals, backgroundColor:'#A65B4E', borderRadius:3, maxBarThickness:28 }
-      ]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:true, position:'top', labels:{boxWidth:10, font:{size:11}}}, tooltip:{ callbacks:{ label: ctx => `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } } },
-      scales:{
-        y:{ ticks:{ callback:v=>Number(v).toLocaleString('ko-KR') }, grid:{ color:'#E2DFD6' } },
-        x:{ grid:{ display:false } }
-      }
-    }
-  });
+  drawMonthlyBarChart(months, months.map(m=>monthIncome[m]||0), months.map(m=>monthExpense[m]||0));
 
   // 카테고리별 집계 (지출만)
   const catMap = {};
   expenseEntries.forEach(e=>{ catMap[e.category] = (catMap[e.category]||0) + e.amount; });
   const cats = Object.keys(catMap).sort((a,b)=>catMap[b]-catMap[a]);
-  const catVals = cats.map(c=>catMap[c]);
-  const catColors = cats.map(c=>CATEGORY_COLORS[c]||'#7A7A7A');
-  const catTotal = catVals.reduce((a,v)=>a+v, 0);
-  const catLabels = cats.map((c,i)=> catTotal ? `${c} (${(catVals[i]/catTotal*100).toFixed(1)}%)` : c);
+  drawDonutChart(cats, cats.map(c=>catMap[c]));
+}
 
-  if(categoryChartInst) categoryChartInst.destroy();
-  const legendPos = window.innerWidth < 600 ? 'bottom' : 'right';
-  categoryChartInst = new Chart(document.getElementById('categoryChart'), {
-    type:'doughnut',
-    data:{ labels: catLabels, datasets:[{ data: catVals, backgroundColor: catColors, borderWidth:2, borderColor:'#FFFFFF' }] },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{ position: legendPos, labels:{ boxWidth:10, font:{size:11} } },
-        tooltip:{ callbacks:{ label: ctx => {
-          const pct = catTotal ? (ctx.parsed/catTotal*100).toFixed(1) : 0;
-          return `${cats[ctx.dataIndex]}: ${fmt(ctx.parsed)} (${pct}%)`;
-        } } }
+function drawMonthlyBarChart(months, incomeVals, expenseVals){
+  const box = document.getElementById('monthlyChart');
+  if(months.length === 0){
+    box.innerHTML = '<div class="empty">데이터가 없습니다.</div>';
+    return;
+  }
+  const W = 640, H = 320, padL = 70, padR = 16, padT = 24, padB = 40;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const maxVal = Math.max(...incomeVals, ...expenseVals, 1);
+  // y축 눈금: 4단계, 만원 단위로 올림
+  const step = Math.ceil(maxVal / 4 / 10000) * 10000 || 10000;
+  const yMax = step * 4;
+  const groupW = plotW / months.length;
+  const barW = Math.min(24, groupW * 0.32);
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  // 눈금선 + y라벨
+  for(let i=0;i<=4;i++){
+    const y = padT + plotH - (plotH * i / 4);
+    const val = step * i;
+    svg += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#E2DFD6" stroke-width="1"/>`;
+    svg += `<text x="${padL-8}" y="${y+4}" text-anchor="end" font-size="10" fill="#6F6B63" font-family="JetBrains Mono,monospace">${val.toLocaleString('ko-KR')}</text>`;
+  }
+  // 막대
+  months.forEach((m,i)=>{
+    const cx = padL + groupW * i + groupW/2;
+    const ih = plotH * (incomeVals[i] / yMax);
+    const eh = plotH * (expenseVals[i] / yMax);
+    if(incomeVals[i] > 0){
+      svg += `<rect x="${cx-barW-2}" y="${padT+plotH-ih}" width="${barW}" height="${ih}" fill="#3D8B7D" rx="2"><title>수입 ${incomeVals[i].toLocaleString('ko-KR')}원</title></rect>`;
+    }
+    if(expenseVals[i] > 0){
+      svg += `<rect x="${cx+2}" y="${padT+plotH-eh}" width="${barW}" height="${eh}" fill="#A65B4E" rx="2"><title>지출 ${expenseVals[i].toLocaleString('ko-KR')}원</title></rect>`;
+    }
+    svg += `<text x="${cx}" y="${H-padB+16}" text-anchor="middle" font-size="10" fill="#6F6B63" font-family="JetBrains Mono,monospace">${m}</text>`;
+  });
+  svg += `</svg>`;
+  svg += `<div class="chart-legend">
+    <span class="li"><span class="sw" style="background:#3D8B7D"></span>수입</span>
+    <span class="li"><span class="sw" style="background:#A65B4E"></span>지출</span>
+  </div>`;
+  box.innerHTML = svg;
+}
+
+function drawDonutChart(cats, vals){
+  const box = document.getElementById('categoryChart');
+  const total = vals.reduce((a,v)=>a+v,0);
+  if(cats.length === 0 || total === 0){
+    box.innerHTML = '<div class="empty">지출 데이터가 없습니다.</div>';
+    return;
+  }
+  const size = 300, cx = size/2, cy = size/2, rOuter = 120, rInner = 70;
+  let svg = `<svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="max-width:300px; margin:0 auto;">`;
+  let angle = -Math.PI/2; // 12시 방향 시작
+  cats.forEach((c,i)=>{
+    const frac = vals[i] / total;
+    const a2 = angle + frac * Math.PI * 2;
+    const color = CATEGORY_COLORS[c] || '#7A7A7A';
+    if(frac >= 0.999){
+      // 100% 단일 카테고리: 도넛 전체
+      svg += `<circle cx="${cx}" cy="${cy}" r="${(rOuter+rInner)/2}" fill="none" stroke="${color}" stroke-width="${rOuter-rInner}"><title>${c}: ${vals[i].toLocaleString('ko-KR')}원 (100%)</title></circle>`;
+    }else{
+      const x1o = cx + rOuter*Math.cos(angle), y1o = cy + rOuter*Math.sin(angle);
+      const x2o = cx + rOuter*Math.cos(a2),   y2o = cy + rOuter*Math.sin(a2);
+      const x1i = cx + rInner*Math.cos(a2),   y1i = cy + rInner*Math.sin(a2);
+      const x2i = cx + rInner*Math.cos(angle),y2i = cy + rInner*Math.sin(angle);
+      const large = (a2-angle) > Math.PI ? 1 : 0;
+      svg += `<path d="M ${x1o} ${y1o} A ${rOuter} ${rOuter} 0 ${large} 1 ${x2o} ${y2o} L ${x1i} ${y1i} A ${rInner} ${rInner} 0 ${large} 0 ${x2i} ${y2i} Z" fill="${color}" stroke="#FFFFFF" stroke-width="2"><title>${c}: ${vals[i].toLocaleString('ko-KR')}원 (${(frac*100).toFixed(1)}%)</title></path>`;
+      // 5% 이상 조각에는 퍼센트 라벨
+      if(frac >= 0.05){
+        const mid = (angle + a2) / 2;
+        const rl = (rOuter + rInner) / 2;
+        const lx = cx + rl*Math.cos(mid), ly = cy + rl*Math.sin(mid);
+        svg += `<text x="${lx}" y="${ly+3}" text-anchor="middle" font-size="11" font-weight="600" fill="#FFFFFF" font-family="Pretendard,sans-serif">${(frac*100).toFixed(0)}%</text>`;
       }
     }
+    angle = a2;
   });
+  // 중앙 합계
+  svg += `<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="11" fill="#6F6B63" font-family="Pretendard,sans-serif">지출 합계</text>`;
+  svg += `<text x="${cx}" y="${cy+14}" text-anchor="middle" font-size="14" font-weight="600" fill="#1C1B19" font-family="JetBrains Mono,monospace">${total.toLocaleString('ko-KR')}</text>`;
+  svg += `</svg>`;
+  // 범례 (카테고리명 + 금액 + %)
+  svg += `<div class="chart-legend">` + cats.map((c,i)=>{
+    const color = CATEGORY_COLORS[c] || '#7A7A7A';
+    const pct = (vals[i]/total*100).toFixed(1);
+    return `<span class="li"><span class="sw" style="background:${color}"></span>${c} <span class="pct">${vals[i].toLocaleString('ko-KR')}원 · ${pct}%</span></span>`;
+  }).join('') + `</div>`;
+  box.innerHTML = svg;
 }
 
 function render(){
@@ -787,9 +877,6 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
-    if(btn.dataset.tab === 'stats'){
-      renderStats(getFiltered());
-    }
   });
 });
 
