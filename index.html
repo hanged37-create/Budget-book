@@ -440,11 +440,11 @@
 
 <script>
 const EXPENSE_CATEGORIES = ['식비','생필품','교통','쇼핑','주거','의료','문화/여가','통신','구독','경조사','기타'];
-const INCOME_CATEGORIES = ['급여','부수입','이자/배당','환급','기타수입'];
+const INCOME_CATEGORIES = ['급여','부수입','투자수익','이자/배당','환급','기타수입'];
 const CATEGORY_COLORS = {
   '식비':'#2F5D50','생필품':'#5C7A6E','교통':'#4A6FA5','쇼핑':'#A65B4E','주거':'#8C6E4B',
   '의료':'#6B5B95','문화/여가':'#3D8B7D','통신':'#B98B3E','구독':'#7A5FA0','경조사':'#C77B93','기타':'#7A7A7A',
-  '급여':'#2F5D50','부수입':'#3D8B7D','이자/배당':'#5B8C5A','환급':'#4F9D69','기타수입':'#7BA05B'
+  '급여':'#2F5D50','부수입':'#3D8B7D','투자수익':'#4A7FA5','이자/배당':'#5B8C5A','환급':'#4F9D69','기타수입':'#7BA05B'
 };
 function populateCategorySelect(type){
   const sel = document.getElementById('f-category');
@@ -595,12 +595,12 @@ function getFiltered(){
     if(search && !((e.item||'').toLowerCase().includes(search) || (e.place||'').toLowerCase().includes(search))) return false;
     return true;
   }).sort((a,b)=>{
-    const d = b.date.localeCompare(a.date);
+    const d = a.date.localeCompare(b.date);
     if(d !== 0) return d;
-    // 같은 날짜면 최근 기입한 순 (id 앞부분이 입력 시각 타임스탬프)
+    // 같은 날짜면 먼저 기입한 순 (id 앞부분이 입력 시각 타임스탬프)
     const ta = parseInt(String(a.id).split('-')[0], 10) || 0;
     const tb = parseInt(String(b.id).split('-')[0], 10) || 0;
-    return tb - ta;
+    return ta - tb;
   });
 }
 
