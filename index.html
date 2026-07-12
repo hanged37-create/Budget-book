@@ -276,6 +276,8 @@
   }
   .type-pill.expense{background:#F1EEE8; color:var(--ink-muted);}
   .type-pill.income{background:#E6F2EC; color:var(--accent);}
+  .type-pill.saving{background:#E9EEF4; color:#4A6FA5;}
+  .entry-amount.saving{color:#4A6FA5;}
   td.amount.income{color:var(--accent);}
   td.amount.expense{color:var(--ink);}
   .summary-item .value.income{color:var(--accent);}
@@ -352,11 +354,12 @@
         <select id="f-type">
           <option value="expense">지출</option>
           <option value="income">수입</option>
+          <option value="saving">저축/원금</option>
         </select>
       </div>
       <div class="field"><label>날짜</label><input type="date" id="f-date"></div>
-      <div class="field"><label>구매내역</label><input type="text" id="f-item" placeholder="예) 스타벅스 아메리카노"></div>
-      <div class="field"><label>금액</label><input type="text" inputmode="numeric" class="amount-input" id="f-amount" placeholder="0"></div>
+      <div class="field"><label id="f-item-label">구매내역</label><input type="text" id="f-item" placeholder="예) 스타벅스 아메리카노"></div>
+      <div class="field"><label>금액</label><input type="text" inputmode="numeric" class="amount-input" id="f-amount" placeholder="0 (환수는 -20000)"></div>
       <div class="field"><label>구매장소</label><input type="text" id="f-place" placeholder="예) 강남점"></div>
       <div class="field"><label>결제방법</label><input type="text" id="f-payment" list="payment-options" placeholder="카드/현금"></div>
       <div class="field"><label>카테고리</label>
@@ -384,6 +387,7 @@
           <option value="">전체</option>
           <option value="expense">지출</option>
           <option value="income">수입</option>
+          <option value="saving">저축/원금</option>
         </select>
       </div>
       <div class="field"><label>시작일</label><input type="date" id="ff-start"></div>
@@ -414,7 +418,8 @@
       <div class="summary-item"><div class="label">건수</div><div class="value" id="statCount">0건</div></div>
       <div class="summary-item"><div class="label">수입 합계</div><div class="value income" id="statIncome">0원</div></div>
       <div class="summary-item"><div class="label">지출 합계</div><div class="value expense" id="statExpense">0원</div></div>
-      <div class="summary-item"><div class="label">순액</div><div class="value" id="statNet">0원</div></div>
+      <div class="summary-item"><div class="label">저축/원금 합계</div><div class="value" id="statSaving" style="color:#4A6FA5;">0원</div></div>
+      <div class="summary-item"><div class="label">순액 (소비 기준)</div><div class="value" id="statNet">0원</div></div>
     </div>
     <div class="stats-grid">
       <div>
@@ -443,18 +448,38 @@
 <script>
 const EXPENSE_CATEGORIES = ['식비','생필품','교통','쇼핑','주거','의료','문화/여가','통신','구독','경조사','기타'];
 const INCOME_CATEGORIES = ['급여','부수입','투자수익','이자/배당','환급','기타수입'];
+const SAVING_CATEGORIES = ['대출원금상환','적금','투자원금','연금저축','기타저축'];
 const CATEGORY_COLORS = {
   '식비':'#2F5D50','생필품':'#5C7A6E','교통':'#4A6FA5','쇼핑':'#A65B4E','주거':'#8C6E4B',
   '의료':'#6B5B95','문화/여가':'#3D8B7D','통신':'#B98B3E','구독':'#7A5FA0','경조사':'#C77B93','기타':'#7A7A7A',
-  '급여':'#2F5D50','부수입':'#3D8B7D','투자수익':'#4A7FA5','이자/배당':'#5B8C5A','환급':'#4F9D69','기타수입':'#7BA05B'
+  '급여':'#2F5D50','부수입':'#3D8B7D','투자수익':'#4A7FA5','이자/배당':'#5B8C5A','환급':'#4F9D69','기타수입':'#7BA05B',
+  '대출원금상환':'#5B7A99','적금':'#4A6FA5','투자원금':'#3D6B8C','연금저축':'#6B87A3','기타저축':'#7A93AD'
 };
 function populateCategorySelect(type){
   const sel = document.getElementById('f-category');
-  const list = type==='income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const list = type==='income' ? INCOME_CATEGORIES : type==='saving' ? SAVING_CATEGORIES : EXPENSE_CATEGORIES;
   sel.innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+function typeLabel(t){
+  return t==='income' ? '수입' : t==='saving' ? '저축/원금' : '지출';
+}
+function updateItemLabel(type){
+  const label = document.getElementById('f-item-label');
+  const input = document.getElementById('f-item');
+  if(type === 'income'){
+    label.textContent = '입금내역';
+    input.placeholder = '예) 배당금, 6월 급여';
+  }else if(type === 'saving'){
+    label.textContent = '저축내역';
+    input.placeholder = '예) 주택담보대출 원금상환';
+  }else{
+    label.textContent = '구매내역';
+    input.placeholder = '예) 스타벅스 아메리카노';
+  }
 }
 document.getElementById('f-type').addEventListener('change', (e)=>{
   populateCategorySelect(e.target.value);
+  updateItemLabel(e.target.value);
 });
 const KEYWORD_MAP = [
   ['식비',['식당','카페','커피','스타벅스','편의점','음식','배달','식품','빵','분식','국밥','김밥','치킨','피자','버거']],
@@ -503,6 +528,7 @@ function fmt(n){ return Number(n||0).toLocaleString('ko-KR') + '원'; }
 function clearForm(){
   document.getElementById('f-type').value = 'expense';
   populateCategorySelect('expense');
+  updateItemLabel('expense');
   document.getElementById('f-date').value = '';
   document.getElementById('f-item').value = '';
   document.getElementById('f-amount').value = '';
@@ -525,16 +551,20 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
   const type = document.getElementById('f-type').value;
   const date = document.getElementById('f-date').value;
   const item = document.getElementById('f-item').value.trim();
-  const amountRaw = document.getElementById('f-amount').value.replace(/[^0-9]/g,'');
+  const amountRaw = document.getElementById('f-amount').value.replace(/[^0-9-]/g,'').replace(/(?!^)-/g,'');
   const place = document.getElementById('f-place').value.trim();
   const payment = document.getElementById('f-payment').value.trim();
   const category = document.getElementById('f-category').value;
 
-  if(!date || !item || !amountRaw){
+  const amount = parseInt(amountRaw, 10);
+  if(!date || !item || amountRaw === '' || amountRaw === '-' || isNaN(amount) || amount === 0){
     alert('날짜, 구매내역, 금액은 필수입니다.');
     return;
   }
-  const amount = parseInt(amountRaw, 10);
+  if(type === 'income' && amount < 0){
+    alert('수입 금액은 마이너스로 입력할 수 없습니다. 환수/차감은 지출에서 마이너스로 입력해주세요.');
+    return;
+  }
 
   if(editingId){
     const idx = entries.findIndex(e=>e.id===editingId);
@@ -631,10 +661,12 @@ function renderTable(filtered){
       lastDate = e.date;
     }
     const sub = [e.category, e.payment, e.place].filter(Boolean).join(' · ');
+    const isRefund = type === 'expense' && e.amount < 0;
+    const amtClass = type==='income' ? 'income' : type==='saving' ? 'saving' : isRefund ? 'income' : '';
     html += `<div class="entry-row" onclick="toggleEntryActions(this)">
       <div class="entry-main">
         <span class="entry-item">${escapeHtml(e.item)}</span>
-        <span class="entry-amount ${type}">${type==='income'?'+':''}${fmt(e.amount)}</span>
+        <span class="entry-amount ${amtClass}">${type==='income'?'+':''}${fmt(e.amount)}</span>
       </div>
       <div class="entry-sub">
         <span class="entry-meta"><span class="dot" style="background:${CATEGORY_COLORS[e.category]||'#7A7A7A'}"></span>${escapeHtml(sub)}</span>
@@ -658,6 +690,7 @@ window.editEntry = function(id){
   const type = e.type || 'expense';
   document.getElementById('f-type').value = type;
   populateCategorySelect(type);
+  updateItemLabel(type);
   document.getElementById('f-date').value = e.date;
   document.getElementById('f-item').value = e.item;
   document.getElementById('f-amount').value = e.amount;
@@ -680,8 +713,10 @@ window.deleteEntry = async function(id){
 function renderStats(filtered){
   const incomeEntries = filtered.filter(e=>(e.type||'expense')==='income');
   const expenseEntries = filtered.filter(e=>(e.type||'expense')==='expense');
+  const savingEntries = filtered.filter(e=>e.type==='saving');
   const incomeSum = incomeEntries.reduce((a,e)=>a+e.amount,0);
   const expenseSum = expenseEntries.reduce((a,e)=>a+e.amount,0);
+  const savingSum = savingEntries.reduce((a,e)=>a+e.amount,0);
   const net = incomeSum - expenseSum;
   const count = filtered.length;
 
@@ -690,18 +725,21 @@ function renderStats(filtered){
   document.getElementById('statCount').textContent = count + '건';
   document.getElementById('statIncome').textContent = fmt(incomeSum);
   document.getElementById('statExpense').textContent = fmt(expenseSum);
+  document.getElementById('statSaving').textContent = fmt(savingSum);
   document.getElementById('statNet').textContent = (net<0?'-':'') + fmt(Math.abs(net));
   document.getElementById('statNet').style.color = net < 0 ? 'var(--danger)' : 'var(--accent)';
 
-  // 월별 집계 (수입/지출 분리)
-  const monthIncome = {}, monthExpense = {};
+  // 월별 집계 (수입/지출/저축 분리)
+  const monthIncome = {}, monthExpense = {}, monthSaving = {};
   filtered.forEach(e=>{
     const m = e.date ? e.date.slice(0,7) : '미상';
-    if((e.type||'expense')==='income'){ monthIncome[m] = (monthIncome[m]||0) + e.amount; }
+    const t = e.type || 'expense';
+    if(t==='income'){ monthIncome[m] = (monthIncome[m]||0) + e.amount; }
+    else if(t==='saving'){ monthSaving[m] = (monthSaving[m]||0) + e.amount; }
     else{ monthExpense[m] = (monthExpense[m]||0) + e.amount; }
   });
-  const months = [...new Set([...Object.keys(monthIncome), ...Object.keys(monthExpense)])].sort();
-  drawMonthlyBarChart(months, months.map(m=>monthIncome[m]||0), months.map(m=>monthExpense[m]||0));
+  const months = [...new Set([...Object.keys(monthIncome), ...Object.keys(monthExpense), ...Object.keys(monthSaving)])].sort();
+  drawMonthlyBarChart(months, months.map(m=>monthIncome[m]||0), months.map(m=>monthExpense[m]||0), months.map(m=>monthSaving[m]||0));
 
   // 카테고리별 집계 (지출만)
   const catMap = {};
@@ -710,7 +748,7 @@ function renderStats(filtered){
   drawDonutChart(cats, cats.map(c=>catMap[c]));
 }
 
-function drawMonthlyBarChart(months, incomeVals, expenseVals){
+function drawMonthlyBarChart(months, incomeVals, expenseVals, savingVals){
   const box = document.getElementById('monthlyChart');
   if(months.length === 0){
     box.innerHTML = '<div class="empty">데이터가 없습니다.</div>';
@@ -718,12 +756,12 @@ function drawMonthlyBarChart(months, incomeVals, expenseVals){
   }
   const W = 640, H = 320, padL = 70, padR = 16, padT = 24, padB = 40;
   const plotW = W - padL - padR, plotH = H - padT - padB;
-  const maxVal = Math.max(...incomeVals, ...expenseVals, 1);
+  const maxVal = Math.max(...incomeVals, ...expenseVals, ...savingVals, 1);
   // y축 눈금: 4단계, 만원 단위로 올림
   const step = Math.ceil(maxVal / 4 / 10000) * 10000 || 10000;
   const yMax = step * 4;
   const groupW = plotW / months.length;
-  const barW = Math.min(24, groupW * 0.32);
+  const barW = Math.min(18, groupW * 0.22);
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
   // 눈금선 + y라벨
@@ -733,16 +771,20 @@ function drawMonthlyBarChart(months, incomeVals, expenseVals){
     svg += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#E2DFD6" stroke-width="1"/>`;
     svg += `<text x="${padL-8}" y="${y+4}" text-anchor="end" font-size="10" fill="#6F6B63" font-family="JetBrains Mono,monospace">${val.toLocaleString('ko-KR')}</text>`;
   }
-  // 막대
+  // 막대 (수입/지출/저축 3개)
   months.forEach((m,i)=>{
     const cx = padL + groupW * i + groupW/2;
     const ih = plotH * (incomeVals[i] / yMax);
     const eh = plotH * (expenseVals[i] / yMax);
+    const sh = plotH * (Math.abs(savingVals[i]) / yMax);
     if(incomeVals[i] > 0){
-      svg += `<rect x="${cx-barW-2}" y="${padT+plotH-ih}" width="${barW}" height="${ih}" fill="#3D8B7D" rx="2"><title>수입 ${incomeVals[i].toLocaleString('ko-KR')}원</title></rect>`;
+      svg += `<rect x="${cx-barW*1.5-4}" y="${padT+plotH-ih}" width="${barW}" height="${ih}" fill="#3D8B7D" rx="2"><title>수입 ${incomeVals[i].toLocaleString('ko-KR')}원</title></rect>`;
     }
     if(expenseVals[i] > 0){
-      svg += `<rect x="${cx+2}" y="${padT+plotH-eh}" width="${barW}" height="${eh}" fill="#A65B4E" rx="2"><title>지출 ${expenseVals[i].toLocaleString('ko-KR')}원</title></rect>`;
+      svg += `<rect x="${cx-barW/2}" y="${padT+plotH-eh}" width="${barW}" height="${eh}" fill="#A65B4E" rx="2"><title>지출 ${expenseVals[i].toLocaleString('ko-KR')}원</title></rect>`;
+    }
+    if(savingVals[i] !== 0){
+      svg += `<rect x="${cx+barW/2+4}" y="${padT+plotH-sh}" width="${barW}" height="${sh}" fill="#4A6FA5" rx="2"><title>저축/원금 ${savingVals[i].toLocaleString('ko-KR')}원</title></rect>`;
     }
     svg += `<text x="${cx}" y="${H-padB+16}" text-anchor="middle" font-size="10" fill="#6F6B63" font-family="JetBrains Mono,monospace">${m}</text>`;
   });
@@ -750,6 +792,7 @@ function drawMonthlyBarChart(months, incomeVals, expenseVals){
   svg += `<div class="chart-legend">
     <span class="li"><span class="sw" style="background:#3D8B7D"></span>수입</span>
     <span class="li"><span class="sw" style="background:#A65B4E"></span>지출</span>
+    <span class="li"><span class="sw" style="background:#4A6FA5"></span>저축/원금</span>
   </div>`;
   box.innerHTML = svg;
 }
@@ -819,9 +862,9 @@ function exportJSON(){
 }
 
 function exportCSV(){
-  const header = ['날짜','구분','구매내역','카테고리','금액','구매장소','결제방법'];
+  const header = ['날짜','구분','내역','카테고리','금액','구매장소','결제방법'];
   const rows = entries.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>[
-    e.date, (e.type||'expense')==='income'?'수입':'지출', e.item, e.category, e.amount, e.place||'', e.payment||''
+    e.date, typeLabel(e.type||'expense'), e.item, e.category, e.amount, e.place||'', e.payment||''
   ]);
   const csvBody = [header, ...rows].map(r=>
     r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')
