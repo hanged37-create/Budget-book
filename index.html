@@ -235,6 +235,22 @@
     padding:32px 0;
     font-size:13px;
   }
+  .month-nav{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:12px;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--rule);
+  }
+  .month-nav #monthLabel{
+    font-family:var(--mono);
+    font-size:14px;
+    font-weight:600;
+    min-width:78px;
+    text-align:center;
+  }
+  .month-nav button{padding:5px 12px;}
   .stats-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -408,6 +424,12 @@
 
   <section class="tab-panel" id="panel-list">
     <h2><span class="num">03</span> 내역 목록 <span id="rowCount" style="font-family:var(--mono); font-size:11px; color:var(--ink-muted); font-weight:400;"></span></h2>
+    <div class="month-nav">
+      <button class="btn-ghost" id="prevMonthBtn">‹</button>
+      <span id="monthLabel">전체</span>
+      <button class="btn-ghost" id="nextMonthBtn">›</button>
+      <button class="btn-ghost" id="allMonthsBtn" style="margin-left:auto;">전체보기</button>
+    </div>
     <div id="listBody"></div>
     <div class="empty" id="emptyState" style="display:none;">입력된 내역이 없습니다.</div>
   </section>
@@ -446,12 +468,13 @@
 </div>
 
 <script>
-const EXPENSE_CATEGORIES = ['식비','생필품','차량','대중교통','쇼핑','주거','의료','문화/여가','통신','구독','경조사','기타'];
+const EXPENSE_CATEGORIES = ['식비','회사 점심값','음료','부식비','생필품','차량','대중교통','쇼핑','선물','여행','주거','의료','문화/여가','구독','기타'];
 const INCOME_CATEGORIES = ['급여','부수입','투자수익','이자/배당','환급','기타수입'];
 const SAVING_CATEGORIES = ['대출원금상환','적금','투자원금','연금저축','기타저축'];
 const CATEGORY_COLORS = {
-  '식비':'#2F5D50','생필품':'#5C7A6E','차량':'#4A6FA5','대중교통':'#7BA0C4','쇼핑':'#A65B4E','주거':'#8C6E4B',
-  '의료':'#6B5B95','문화/여가':'#3D8B7D','통신':'#B98B3E','구독':'#7A5FA0','경조사':'#C77B93','기타':'#7A7A7A',
+  '식비':'#2F5D50','회사 점심값':'#6B9C6E','음료':'#5FA8A3','부식비':'#4F8759','생필품':'#5C7A6E',
+  '차량':'#4A6FA5','대중교통':'#7BA0C4','쇼핑':'#A65B4E','선물':'#C77B93','여행':'#C79A56',
+  '주거':'#8C6E4B','의료':'#6B5B95','문화/여가':'#3D8B7D','통신':'#B98B3E','구독':'#7A5FA0','기타':'#7A7A7A',
   '급여':'#2F5D50','부수입':'#3D8B7D','투자수익':'#4A7FA5','이자/배당':'#5B8C5A','환급':'#4F9D69','기타수입':'#7BA05B',
   '대출원금상환':'#5B7A99','적금':'#4A6FA5','투자원금':'#3D6B8C','연금저축':'#6B87A3','기타저축':'#7A93AD'
 };
@@ -482,17 +505,20 @@ document.getElementById('f-type').addEventListener('change', (e)=>{
   updateItemLabel(e.target.value);
 });
 const KEYWORD_MAP = [
-  ['식비',['식당','카페','커피','스타벅스','편의점','음식','배달','식품','빵','분식','국밥','김밥','치킨','피자','버거']],
+  ['회사 점심값',['도시락']],
+  ['음료',['카페','커피','스타벅스','투썸','메가커피','컴포즈','이디야','빽다방','음료']],
+  ['식비',['식당','편의점','음식','배달','식품','빵','분식','국밥','김밥','치킨','피자','버거']],
+  ['부식비',['정육점','수산시장','반찬가게','채소가게','부식']],
   ['생필품',['세제','휴지','치약','칫솔','생필품','다이소','수세미','물티슈','마트','이마트','홈플러스']],
   ['차량',['주유','세차','정비','타이어','엔진오일','자동차보험','자동차세','하이패스','주차','톨게이트']],
   ['대중교통',['택시','버스','지하철','철도','ktx','카카오t','쏘카']],
   ['쇼핑',['쇼핑','백화점','옷','신발','화장품','쿠팡','마켓','스토어','지마켓','11번가','올리브영']],
+  ['선물',['선물','기프트','케이크']],
+  ['여행',['여행','호텔','항공','비행기','펜션','게스트하우스','에어비앤비']],
   ['주거',['관리비','월세','전기','가스','수도','임대료']],
   ['의료',['병원','약국','의원','치과','한의원']],
-  ['문화/여가',['영화','공연','여행','호텔','놀이','게임','골프','헬스','클럽','콘서트','전시']],
-  ['통신',['통신','핸드폰','휴대폰','요금제','skt','kt','lgu']],
-  ['구독',['넷플릭스','유튜브','유튜브프리미엄','멜론','왓챠','디즈니','티빙','웨이브','스포티파이','구독','애플뮤직','쿠팡와우','네이버플러스']],
-  ['경조사',['축의금','조의금','경조사','부조']]
+  ['문화/여가',['영화','공연','놀이','게임','골프','헬스','클럽','콘서트','전시']],
+  ['구독',['넷플릭스','유튜브','유튜브프리미엄','멜론','왓챠','디즈니','티빙','웨이브','스포티파이','구독','애플뮤직','쿠팡와우','네이버플러스','통신','핸드폰','휴대폰','요금제','skt','kt','lgu']]
 ];
 function guessCategory(item, place){
   const text = ((item||'')+' '+(place||'')).toLowerCase();
@@ -592,6 +618,8 @@ document.getElementById('resetFilterBtn').addEventListener('click', ()=>{
   document.getElementById('ff-category').value = '';
   document.getElementById('ff-payment').value = '';
   document.getElementById('ff-search').value = '';
+  viewYear = null; viewMonth = null;
+  document.getElementById('monthLabel').textContent = '전체';
   render();
 });
 
@@ -917,6 +945,35 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
   e.target.value = '';
 });
 
+let viewYear, viewMonth; // 내역 탭 월 이동 상태 (viewMonth: 1~12), null이면 전체보기
+
+function applyMonthToFilter(y, m){
+  viewYear = y; viewMonth = m;
+  const mm = String(m).padStart(2,'0');
+  const lastDay = new Date(y, m, 0).getDate();
+  document.getElementById('ff-start').value = `${y}-${mm}-01`;
+  document.getElementById('ff-end').value = `${y}-${mm}-${String(lastDay).padStart(2,'0')}`;
+  document.getElementById('monthLabel').textContent = `${y}-${mm}`;
+  render();
+}
+document.getElementById('prevMonthBtn').addEventListener('click', ()=>{
+  if(viewYear == null){ const t=new Date(); viewYear=t.getFullYear(); viewMonth=t.getMonth()+1; }
+  let y=viewYear, m=viewMonth-1; if(m<1){ m=12; y--; }
+  applyMonthToFilter(y, m);
+});
+document.getElementById('nextMonthBtn').addEventListener('click', ()=>{
+  if(viewYear == null){ const t=new Date(); viewYear=t.getFullYear(); viewMonth=t.getMonth()+1; }
+  let y=viewYear, m=viewMonth+1; if(m>12){ m=1; y++; }
+  applyMonthToFilter(y, m);
+});
+document.getElementById('allMonthsBtn').addEventListener('click', ()=>{
+  viewYear = null; viewMonth = null;
+  document.getElementById('ff-start').value = '';
+  document.getElementById('ff-end').value = '';
+  document.getElementById('monthLabel').textContent = '전체';
+  render();
+});
+
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -931,7 +988,9 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
   populateCategorySelect('expense');
   document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
   populateFilterOptions();
-  render();
+  const t = new Date();
+  viewYear = t.getFullYear(); viewMonth = t.getMonth()+1;
+  applyMonthToFilter(viewYear, viewMonth);
 })();
 </script>
 </body>
