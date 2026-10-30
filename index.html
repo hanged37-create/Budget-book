@@ -468,11 +468,11 @@
 </div>
 
 <script>
-const EXPENSE_CATEGORIES = ['식비','회사 점심값','음료','부식비','생필품','차량','대중교통','쇼핑','선물','여행','주거','의료','문화/여가','구독','기타'];
+const EXPENSE_CATEGORIES = ['식비','회사 점심값','카페/간식','부식비','생필품','뷰티','차량','대중교통','쇼핑','선물','여행','주거','의료','문화/여가','구독','기타'];
 const INCOME_CATEGORIES = ['급여','부수입','투자수익','이자/배당','환급','기타수입'];
 const SAVING_CATEGORIES = ['대출원금상환','적금','투자원금','연금저축','기타저축'];
 const CATEGORY_COLORS = {
-  '식비':'#2F5D50','회사 점심값':'#6B9C6E','음료':'#5FA8A3','부식비':'#4F8759','생필품':'#5C7A6E',
+  '식비':'#2F5D50','회사 점심값':'#6B9C6E','카페/간식':'#5FA8A3','부식비':'#4F8759','생필품':'#5C7A6E','뷰티':'#BE6E8F',
   '차량':'#4A6FA5','대중교통':'#7BA0C4','쇼핑':'#A65B4E','선물':'#C77B93','여행':'#C79A56',
   '주거':'#8C6E4B','의료':'#6B5B95','문화/여가':'#3D8B7D','통신':'#B98B3E','구독':'#7A5FA0','기타':'#7A7A7A',
   '급여':'#2F5D50','부수입':'#3D8B7D','투자수익':'#4A7FA5','이자/배당':'#5B8C5A','환급':'#4F9D69','기타수입':'#7BA05B',
@@ -506,13 +506,14 @@ document.getElementById('f-type').addEventListener('change', (e)=>{
 });
 const KEYWORD_MAP = [
   ['회사 점심값',['도시락']],
-  ['음료',['카페','커피','스타벅스','투썸','메가커피','컴포즈','이디야','빽다방','음료']],
-  ['식비',['식당','편의점','음식','배달','식품','빵','분식','국밥','김밥','치킨','피자','버거']],
+  ['카페/간식',['카페','커피','스타벅스','투썸','메가커피','컴포즈','이디야','빽다방','음료','베이커리','디저트','빵','아이스크림','마카롱','도넛','와플','과자','간식']],
+  ['식비',['식당','편의점','음식','배달','식품','분식','국밥','김밥','치킨','피자','버거']],
   ['부식비',['정육점','수산시장','반찬가게','채소가게','부식']],
-  ['생필품',['세제','휴지','치약','칫솔','생필품','다이소','수세미','물티슈','마트','이마트','홈플러스']],
+  ['뷰티',['미용실','헤어','네일','립스틱','화장품','메이크업','염색','파마','왁싱','속눈썹']],
+  ['생필품',['세제','휴지','치약','칫솔','생필품','다이소','수세미','물티슈']],
   ['차량',['주유','세차','정비','타이어','엔진오일','자동차보험','자동차세','하이패스','주차','톨게이트']],
   ['대중교통',['택시','버스','지하철','철도','ktx','카카오t','쏘카']],
-  ['쇼핑',['쇼핑','백화점','옷','신발','화장품','쿠팡','마켓','스토어','지마켓','11번가','올리브영']],
+  ['쇼핑',['쇼핑','백화점','옷','신발','쿠팡','마켓','스토어','지마켓','11번가','올리브영']],
   ['선물',['선물','기프트','케이크']],
   ['여행',['여행','호텔','항공','비행기','펜션','게스트하우스','에어비앤비']],
   ['주거',['관리비','월세','전기','가스','수도','임대료']],
@@ -533,10 +534,20 @@ let editingId = null;
 
 const STORAGE_KEY = 'ledger_entries';
 
+// 카테고리명 변경 이관: 음료 → 카페/간식 (변경이 있었으면 true)
+function migrateCategories(list){
+  let changed = false;
+  list.forEach(x=>{
+    if(x && x.category === '음료'){ x.category = '카페/간식'; changed = true; }
+  });
+  return changed;
+}
+
 function loadEntries(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     entries = raw ? JSON.parse(raw) : [];
+    if(migrateCategories(entries)) saveEntries();
   }catch(e){
     entries = [];
   }
@@ -879,11 +890,16 @@ function render(){
   renderStats(filtered);
 }
 
+// 기기 시간대와 무관하게 한국시간(KST) 기준 오늘 날짜(YYYY-MM-DD)
+function todayKST(){
+  return new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date());
+}
+
 function exportJSON(){
   const blob = new Blob([JSON.stringify(entries, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const today = todayKST().replace(/-/g,'');
   a.href = url;
   a.download = `가계부_백업_${today}.json`;
   a.click();
@@ -902,7 +918,7 @@ function exportCSV(){
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const today = todayKST().replace(/-/g,'');
   a.href = url;
   a.download = `가계부_${today}.csv`;
   a.click();
@@ -916,6 +932,7 @@ function importJSON(file){
     try{
       imported = JSON.parse(e.target.result);
       if(!Array.isArray(imported)) throw new Error('형식 오류');
+      migrateCategories(imported);
     }catch(err){
       alert('올바른 백업 파일이 아닙니다.');
       return;
@@ -986,10 +1003,10 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 (async function init(){
   await loadEntries();
   populateCategorySelect('expense');
-  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  const kstToday = todayKST();
+  document.getElementById('f-date').value = kstToday;
   populateFilterOptions();
-  const t = new Date();
-  viewYear = t.getFullYear(); viewMonth = t.getMonth()+1;
+  viewYear = parseInt(kstToday.slice(0,4), 10); viewMonth = parseInt(kstToday.slice(5,7), 10);
   applyMonthToFilter(viewYear, viewMonth);
 })();
 </script>
