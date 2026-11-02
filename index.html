@@ -650,6 +650,17 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('applyFilterBtn').addEventListener('click', ()=>{
+  // 날짜가 월 이동으로 자동 채워진 상태에서 다른 조건을 걸면 전체 기간에서 검색
+  // (직접 입력한 기간은 그대로 유지)
+  const hasOtherFilter = ['ff-type','ff-category','ff-payment'].some(id=>document.getElementById(id).value)
+    || document.getElementById('ff-search').value.trim();
+  if(dateAuto && hasOtherFilter){
+    document.getElementById('ff-start').value = '';
+    document.getElementById('ff-end').value = '';
+    viewYear = null; viewMonth = null;
+    document.getElementById('monthLabel').textContent = '전체';
+    dateAuto = false;
+  }
   render();
   document.querySelector('.tab-btn[data-tab="list"]').click();
 });
@@ -996,8 +1007,19 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
 });
 
 let viewYear, viewMonth; // 내역 탭 월 이동 상태 (viewMonth: 1~12), null이면 전체보기
+let dateAuto = true;     // 시작일/종료일이 월 이동으로 자동 채워진 상태인지 (직접 입력하면 false)
+
+// 필터 탭에서 날짜를 직접 고치면 '월 이동' 상태 해제
+['ff-start','ff-end'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=>{
+    dateAuto = false;
+    viewYear = null; viewMonth = null;
+    document.getElementById('monthLabel').textContent = '기간 지정';
+  });
+});
 
 function applyMonthToFilter(y, m){
+  dateAuto = true;
   viewYear = y; viewMonth = m;
   const mm = String(m).padStart(2,'0');
   const lastDay = new Date(y, m, 0).getDate();
