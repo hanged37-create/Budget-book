@@ -126,6 +126,13 @@
     border-color:var(--accent);
   }
   .amount-input{font-family:var(--mono); text-align:right;}
+  .amount-row{display:flex; gap:6px; align-items:stretch;}
+  .amount-row .amount-input{flex:1; min-width:0;}
+  .btn-sign{
+    flex:0 0 46px; padding:0; background:#fff; color:var(--ink);
+    border:1px solid var(--rule); font-size:16px; line-height:1;
+  }
+  .btn-sign.neg{background:#A65B4E; color:#fff; border-color:#A65B4E;}
   button{
     font-family:var(--sans);
     font-weight:600;
@@ -375,7 +382,12 @@
       </div>
       <div class="field"><label>날짜</label><input type="date" id="f-date"></div>
       <div class="field"><label id="f-item-label">구매내역</label><input type="text" id="f-item" placeholder="예) 스타벅스 아메리카노"></div>
-      <div class="field"><label>금액</label><input type="text" inputmode="numeric" class="amount-input" id="f-amount" placeholder="0 (환수는 -20000)"></div>
+      <div class="field"><label>금액 <span style="font-weight:400;color:var(--ink-soft,#888);">(환수는 ± 버튼)</span></label>
+        <div class="amount-row">
+          <button type="button" id="signBtn" class="btn-sign" aria-label="환수(마이너스) 전환">±</button>
+          <input type="text" inputmode="numeric" class="amount-input" id="f-amount" placeholder="0">
+        </div>
+      </div>
       <div class="field"><label>구매장소</label><input type="text" id="f-place" placeholder="예) 강남점"></div>
       <div class="field"><label>결제방법</label><input type="text" id="f-payment" list="payment-options" placeholder="카드/현금"></div>
       <div class="field"><label>카테고리</label>
@@ -563,6 +575,21 @@ function saveEntries(){
 
 function fmt(n){ return Number(n||0).toLocaleString('ko-KR') + '원'; }
 
+// ± 버튼: 숫자 키패드에 마이너스 키가 없어서 버튼으로 환수(-) 전환
+function syncSignBtn(){
+  const v = document.getElementById('f-amount').value.trim();
+  document.getElementById('signBtn').classList.toggle('neg', v.includes('-'));
+}
+document.getElementById('signBtn').addEventListener('click', ()=>{
+  const el = document.getElementById('f-amount');
+  const v = el.value.trim();
+  el.value = v.includes('-') ? v.replace(/-/g,'') : '-' + v;
+  syncSignBtn();
+  el.focus();
+  el.setSelectionRange(el.value.length, el.value.length); // 커서를 맨 뒤로
+});
+document.getElementById('f-amount').addEventListener('input', syncSignBtn);
+
 function clearForm(){
   document.getElementById('f-type').value = 'expense';
   populateCategorySelect('expense');
@@ -570,6 +597,7 @@ function clearForm(){
   document.getElementById('f-date').value = todayKST();
   document.getElementById('f-item').value = '';
   document.getElementById('f-amount').value = '';
+  syncSignBtn();
   document.getElementById('f-place').value = '';
   document.getElementById('f-payment').value = '';
   document.getElementById('f-category').value = '식비';
@@ -589,7 +617,10 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
   const type = document.getElementById('f-type').value;
   const date = document.getElementById('f-date').value;
   const item = document.getElementById('f-item').value.trim();
-  const amountRaw = document.getElementById('f-amount').value.replace(/[^0-9-]/g,'').replace(/(?!^)-/g,'');
+  // '-'가 어디에 있든 마이너스로 인식 (커서 위치 때문에 5000- 처럼 입력돼도 -5000)
+  const amountVal = document.getElementById('f-amount').value;
+  const amountDigits = amountVal.replace(/[^0-9]/g,'');
+  const amountRaw = amountVal.includes('-') ? '-' + amountDigits : amountDigits;
   const place = document.getElementById('f-place').value.trim();
   const payment = document.getElementById('f-payment').value.trim();
   const category = document.getElementById('f-category').value;
@@ -734,6 +765,7 @@ window.editEntry = function(id){
   document.getElementById('f-date').value = e.date;
   document.getElementById('f-item').value = e.item;
   document.getElementById('f-amount').value = e.amount;
+  syncSignBtn();
   document.getElementById('f-place').value = e.place;
   document.getElementById('f-payment').value = e.payment;
   document.getElementById('f-category').value = e.category;
